@@ -41,6 +41,7 @@ pycryptodome==3.22.0
 pydantic==2.11.3
 pydantic_core==2.33.1
 PyJWT==2.9.0
+python-dotenv==1.1.0
 pyunormalize==16.0.0
 # pywin32==310
 regex==2024.11.6
