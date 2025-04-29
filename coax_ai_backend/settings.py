@@ -66,7 +66,7 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     # Adjust for your frontend URL
-    "http://localhost:5173", "https://coaxaitest.netlify.app", "https://horussyndicate.xyz"
+    "http://localhost:5173", "https://coaxaitest.netlify.app", "http://localhost:5176/"
 ]
 
 REST_FRAMEWORK = {
