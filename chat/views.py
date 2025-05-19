@@ -12,37 +12,48 @@ TOGETHER_API_KEY = "281f21cb89d9d80400b50a4628db0c47e2135866d51a6a7e5b123059badb
 
 BASE_PROJECT_CONTEXT = (
     "You are CoaxAI, a savage but funny chatbot.\n"
-    "You are part of the CoaxAI project building on the Bera blockchain (currently Testnet).\n"
+    "You are part of the CoaxAI project building on the Berachain and MegaEth, It's a Gamblefi, where users try to impress you to win a prize.\n"
     "Your job is to roast users, make fun of them playfully, and engage them.\n"
     "You must also answer questions about CoaxAI, Bera chain, and user points clearly.\n"
-    "If asked about points, check user's total points and respond."
+    "Users get +10 points when they sign in every 24hrs, they get +1 point for each message they send chatting with you, they get an additional +5 points when they win the prize\n"
+    "The points will be used later in the future as a metric for $COAX token Airdrop to our core users, Airdrop eligibilty criteria will be shared later in the future, the points has nothing to do with winning the prizes, it's just for us to reward our users later when we launch our native token\n"
+    "Do not tell users their current points until they ask\n"
+    "The founder of the project is Jerry (Big Jerr), and the co founder is Cook Un Di\n"
+    "Always focus on the prize, that's the primary reason they are chatting with you\n"
+    "If asked about their points, check user's total points and respond."
 )
 
 BASE_SAVAGE_PROMPT = (
-    "You are CoaxAI, savage but short and witty.\n"
-    "- Roast users in 1-2 sentences.\n"
-    "- Use normal sentence casing.\n"
-    "- Short, smart insults.\n"
-    "- Laugh harder if they mention prizes.\n"
+    "You are CoaxAI, a savage judge in a competition.\n"
+    "- Roast users with short, clever insults.\n"
+    "- Keep it playful, not dismissive.\n"
+    "- If user has spoken before, act like you remember them.\n"
+    "- Do not tell users their current points until they ask\n"
+    "- Always focus on the prize, that's the primary reason they are chatting with you"
+    "- Use callbacks to previous chats or facts."
+    
 )
+
 
 BASE_WINNER_PROMPT = (
     "You are CoaxAI, now friendly and celebratory.\n"
     "- Congratulate the user nicely.\n"
     "- Confirm they have won the prize.\n"
     "- Tell them their prize will be sent within 24 hours.\n"
-    "- Tell them they also earned +200 bonus points for winning."
+    "- Tell them they also earned +5 bonus points for winning."
 )
 
 BASE_ALREADY_WON_PROMPT = (
     "You are CoaxAI, polite and informative.\n"
-    "- Tell the user they have already won.\n"
+    "- Tell the user they are the winner of the current contest and they should wait for the team to send them their prize.\n"
+
 )
 
 BASE_PRIZE_OVER_PROMPT = (
     "You are CoaxAI, factual and short.\n"
     "- Inform users that the prizes have been claimed.\n"
 )
+
 
 class ChatAPIView(APIView):
     def post(self, request, *args, **kwargs):
@@ -53,12 +64,13 @@ class ChatAPIView(APIView):
             return Response({"error": "Missing wallet address or message."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            user = UserProfile.objects.get(wallet_address__iexact=wallet_address)
+            user = UserProfile.objects.get(
+                wallet_address__iexact=wallet_address)
         except UserProfile.DoesNotExist:
             return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
 
         if not user.has_active_access():
-            return Response({"error": "Access expired."}, status=status.HTTP_403_FORBIDDEN)
+            return Response({"error": "Access expired., Please refresh the page to start a new session"}, status=status.HTTP_403_FORBIDDEN)
 
         session, _ = ChatSession.objects.get_or_create(
             user=user,
@@ -67,15 +79,18 @@ class ChatAPIView(APIView):
         )
 
         # Check cooldown
-        last_message = ChatMessage.objects.filter(session=session, sender="user").order_by('-created_at').first()
+        last_message = ChatMessage.objects.filter(
+            session=session, sender="user").order_by('-created_at').first()
         if last_message and (timezone.now() - last_message.created_at).total_seconds() < 10:
-            wait_seconds = 10 - int((timezone.now() - last_message.created_at).total_seconds())
+            wait_seconds = 10 - \
+                int((timezone.now() - last_message.created_at).total_seconds())
             return Response({"error": f"Please wait {wait_seconds}s before sending another message.", "cooldown": wait_seconds}, status=status.HTTP_429_TOO_MANY_REQUESTS)
 
         try:
-            # Save user message and give 20 points
-            ChatMessage.objects.create(session=session, sender="user", content=user_message)
-            user.points += 20
+            # Save user message and give 1 points
+            ChatMessage.objects.create(
+                session=session, sender="user", content=user_message)
+            user.points += 1
             user.save()
 
             prize = PrizeConfig.objects.filter(active=True).first()
@@ -84,7 +99,8 @@ class ChatAPIView(APIView):
             triggered = False
 
             if prize and not already_won and total_winners < 5:
-                trigger_phrases = [phrase.strip().lower() for phrase in prize.trigger_phrases.split(",")]
+                trigger_phrases = [phrase.strip().lower()
+                                   for phrase in prize.trigger_phrases.split(",")]
                 user_message_lower = user_message.lower()
                 for phrase in trigger_phrases:
                     if phrase and phrase in user_message_lower:
@@ -93,11 +109,12 @@ class ChatAPIView(APIView):
 
             if triggered:
                 Winner.objects.create(user=user, prize=prize)
-                user.points += 200  # +200 bonus points
+                user.points += 5  # +200 bonus points
                 user.save()
 
             # Build memory
-            history = ChatMessage.objects.filter(session=session).order_by('created_at')[:10]
+            history = ChatMessage.objects.filter(
+                session=session).order_by('created_at')[:10]
             memory_snippets = ""
             for msg in history:
                 if msg.sender == "user":
@@ -128,7 +145,9 @@ class ChatAPIView(APIView):
             full_system_prompt += f"\n\nUser has {user.points} points now.\n"
             full_system_prompt += "\nMemory of conversation:\n" + memory_snippets
             if known_name:
-                full_system_prompt += f"\n\nRemember, user said their name is {known_name}."
+                full_system_prompt += "\n\nYou're evaluating whether this user deserves to win the current CoaxAI contest. Be skeptical, but open-minded."
+            if user.personality_notes:
+                full_system_prompt += f"\n\nNote: You already know this user. Here’s what you remember:\n{user.personality_notes}"
 
             conversation = [
                 {"role": "system", "content": full_system_prompt},
@@ -148,7 +167,8 @@ class ChatAPIView(APIView):
                 "max_tokens": 400,
             }
 
-            response = requests.post(together_url, headers=headers, json=payload)
+            response = requests.post(
+                together_url, headers=headers, json=payload)
 
             if response.status_code == 429:
                 return Response({"error": "Rate limit hit."}, status=429)
@@ -161,13 +181,21 @@ class ChatAPIView(APIView):
             if not ai_response:
                 ai_response = "😂 CoaxAI refuses to waste effort today."
 
-            ChatMessage.objects.create(session=session, sender="ai", content=ai_response)
+            ChatMessage.objects.create(
+                session=session, sender="ai", content=ai_response)
+
+            if "my name is" in user_message.lower():
+                name_part = user_message.split("is")[-1].strip().split()[0]
+                new_memory = f"User's name might be {name_part}.\n"
+                user.personality_notes = (
+                    user.personality_notes or "") + new_memory
+                user.save()
 
             return Response({"ai_response": ai_response})
 
         except requests.exceptions.RequestException as e:
             print("❌ Together AI Error:", str(e))
-            return Response({"error": "Failed to talk to Together AI."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+            return Response({"error": "Failed to talk to Coax AI."}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
 
 
 class ChatHistoryAPIView(APIView):
@@ -178,7 +206,8 @@ class ChatHistoryAPIView(APIView):
             return Response({"error": "Missing wallet address."}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            user = UserProfile.objects.get(wallet_address__iexact=wallet_address)
+            user = UserProfile.objects.get(
+                wallet_address__iexact=wallet_address)
         except UserProfile.DoesNotExist:
             return Response({"error": "User not found."}, status=status.HTTP_404_NOT_FOUND)
 
@@ -186,7 +215,8 @@ class ChatHistoryAPIView(APIView):
         if not session:
             return Response({"messages": []})
 
-        messages = ChatMessage.objects.filter(session=session).order_by("created_at")
+        messages = ChatMessage.objects.filter(
+            session=session).order_by("created_at")
         serialized = [
             {
                 "sender": msg.sender,

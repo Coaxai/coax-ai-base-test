@@ -29,7 +29,7 @@ SECRET_KEY = os.getenv('SECRET_KEY')
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = ['localhost', 'coax-ai-base-test.onrender.com']
+ALLOWED_HOSTS = ['localhost', 'coax-ai-base-test.onrender.com', '127.0.0.1']
 
 
 # Application definition
@@ -66,8 +66,9 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     # Adjust for your frontend URL
-    "http://localhost:5173", "https://coaxaitest.netlify.app", "http://localhost:5176"
+    "http://localhost:5173", "https://coaxaitest.netlify.app", "http://localhost:5176", "https://coaxai.chat"
 ]
+
 
 REST_FRAMEWORK = {
     'DEFAULT_AUTHENTICATION_CLASSES': (
@@ -76,6 +77,7 @@ REST_FRAMEWORK = {
 }
 
 ROOT_URLCONF = 'coax_ai_backend.urls'
+
 
 TEMPLATES = [
     {

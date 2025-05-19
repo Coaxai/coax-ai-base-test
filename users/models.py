@@ -9,6 +9,7 @@ class UserProfile(models.Model):
     access_start_time = models.DateTimeField(null=True, blank=True)
     access_expiry_time = models.DateTimeField(null=True, blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    personality_notes = models.TextField(blank=True, null=True) 
 
     def __str__(self):
         return self.wallet_address

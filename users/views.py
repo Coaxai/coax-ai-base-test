@@ -82,11 +82,11 @@ class GrantAccessView(APIView):
 
             # Award 500 points if they don't already have access active
             if created or not user.points or user.points < 500:
-                user.points += 500
+                user.points += 10
                 user.save()
 
             return Response({
-                "message": "✅ Access granted successfully. You earned +500 points!",
+                "message": "✅ Access granted successfully. You earned +10 points!",
                 "access_expires_at": user.access_expiry_time,
                 "current_points": user.points
             })
