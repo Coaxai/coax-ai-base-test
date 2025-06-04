@@ -66,7 +66,7 @@ MIDDLEWARE = [
 
 CORS_ALLOWED_ORIGINS = [
     # Adjust for your frontend URL
-    "http://localhost:5173", "https://coaxaitest.netlify.app", "http://localhost:5176", "https://coaxai.chat"
+    "http://localhost:5173", "http://localhost:5173", "https://coaxaitest.netlify.app", "http://localhost:5176", "https://coaxai.chat"
 ]
 
 

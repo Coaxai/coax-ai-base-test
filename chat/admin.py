@@ -20,7 +20,7 @@ class ChatMessageAdmin(admin.ModelAdmin):
 
 @admin.register(PrizeConfig)
 class PrizeConfigAdmin(admin.ModelAdmin):
-    list_display = ('prize_name', 'prize_amount', 'active', 'created_at')
+    list_display = ('prize_name', 'prize_description', 'active', 'created_at')
     list_filter = ('active', 'created_at')
     search_fields = ('prize_name', 'trigger_phrases')
     ordering = ('-created_at',)

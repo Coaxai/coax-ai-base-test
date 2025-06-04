@@ -36,7 +36,7 @@ BASE_SAVAGE_PROMPT = (
     "- Do not tell users their current points until they ask\n"
     "- Always focus on the prize, that's the primary reason they are chatting with you"
     "- Use callbacks to previous chats or facts."
-    
+
 )
 
 
@@ -98,12 +98,13 @@ class ChatAPIView(APIView):
             user.points += 1
             user.save()
 
-            prize = PrizeConfig.objects.filter(active=True).first()
-            already_won = Winner.objects.filter(user=user).exists()
-            total_winners = Winner.objects.count()
-            triggered = False
 
-            if prize and not already_won and total_winners < 5:
+            prize = PrizeConfig.objects.filter(active=True).first()
+            triggered = False
+            already_won_this = Winner.objects.filter(user=user, prize=prize).exists()
+            prize_already_won = Winner.objects.filter(prize=prize).exists()
+
+            if prize and not already_won_this and not prize_already_won:
                 trigger_phrases = [phrase.strip().lower()
                                    for phrase in prize.trigger_phrases.split(",")]
                 user_message_lower = user_message.lower()
@@ -135,16 +136,16 @@ class ChatAPIView(APIView):
                     break
 
             # Select system prompt
-            if already_won:
+            if already_won_this:
                 system_prompt = BASE_ALREADY_WON_PROMPT
-            elif prize and total_winners >= 5:
+            elif prize and prize_already_won:
                 system_prompt = BASE_PRIZE_OVER_PROMPT
             elif triggered:
                 system_prompt = BASE_WINNER_PROMPT
             else:
                 system_prompt = BASE_SAVAGE_PROMPT
                 if prize:
-                    system_prompt += f"\n\nPrize: {prize.prize_name} ({prize.prize_amount} BERA)."
+                    system_prompt += f"\n\nPrize: {prize.prize_name} ({prize.prize_description})."
 
             full_system_prompt = BASE_PROJECT_CONTEXT + "\n\n" + system_prompt
             full_system_prompt += f"\n\nUser has {user.points} points now.\n"
